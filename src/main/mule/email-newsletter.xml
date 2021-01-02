@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:email="http://www.mulesoft.org/schema/mule/email"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/email http://www.mulesoft.org/schema/mule/email/current/mule-email.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<flow name="newsLetterFlow">
+		<http:listener doc:name="Listener" config-ref="HTTP_Listener_config" 
+			path="/nf"/>
+		<logger level="INFO" doc:name="Logger" doc:id="bc0a2c0c-1408-41e6-b74c-35427875ddef" />
+		<http:request method="GET" doc:name="Get News"
+			config-ref="HTTP_Request_configuration" path="/top-headlines">
+			<http:headers><![CDATA[#[output application/java
+---
+{
+	"X-Api-Key" : "${apiKey}"
+}]]]></http:headers>
+			<http:query-params><![CDATA[#[output application/java
+---
+{
+	country: "in"
+}]]]></http:query-params>
+		</http:request>
+		<ee:transform doc:name="Format Articles"  >
+			<ee:message >
+				<ee:set-payload resource="dwl/template.dwl" />
+			</ee:message>
+		</ee:transform>
+		<email:send doc:name="Send"  config-ref="Email_SMTP" fromAddress="user@gmail.com" subject="News Feed">
+			<email:to-addresses >
+				<email:to-address value="receiver@gmail.com" />
+			</email:to-addresses>
+			<email:body contentType="text/html" />
+		</email:send>
+		<set-payload value="Sent Mail" doc:name="Set Payload"  />
+	</flow>
+</mule>
